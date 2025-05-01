@@ -1,0 +1,130 @@
+name: Build & Sync Packages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages.json'
+      - '.github/workflows/build-packages.yml'
+
+  schedule:
+    - cron: '0 0 * * 1'
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    
+    permissions:
+      packages: read
+      contents: write
+
+    container: 
+      image: ghcr.io/${{ github.repository_owner }}/archlinux-builder:latest
+
+    steps:
+      - name: Update system
+        run: sudo pacman -Syu --noconfirm
+
+      - name: Update system
+        run: sudo pacman -Syu --noconfirm
+  
+      - name: Setup git
+        run: |
+          git config --global user.name Builder
+          git config --global user.email builder@tx0.su
+
+      - name: Install tools
+        run: sudo pacman -S --noconfirm base-devel git jq gnupg
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: repo
+      
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+          fetch-depth: 0
+
+      - name: Load config
+        run: |
+          cp main/packages.json .
+          [ ! -f repo/build-state.json ] && echo '{}' > repo/build-state.json
+          cp repo/build-state.json .
+
+      - name: Import GPG key
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo RELOADAGENT | gpg-connect-agent
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Configure makepkg
+        run: |
+          KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
+          echo "GPGKEY=$KEYID" >> ~/.makepkg.conf
+          echo "PACKAGER='Arch Package Builder <build@tx0.su>'" >> ~/.makepkg.conf
+          echo "MAKEFLAGS='-j$(nproc)'" >> ~/.makepkg.conf
+          echo "PKGEXT='.pkg.tar.xz'" >> ~/.makepkg.conf
+          echo "SRCEXT='.src.tar.gz'" >> ~/.makepkg.conf
+
+      - name: Build only changed packages
+        run: |
+          mkdir out
+          outdir="$(realpath ./out)"
+          updated_state="{}"
+
+          for row in $(jq -c '.[]' packages.json); do
+            name="$(echo "$row" | jq -r '.name')"
+            repo="$(echo "$row" | jq -r '.repo')"
+            path="$(echo "$row" | jq -r '.path')"
+
+            echo "::group::$name"
+            if [[ "$repo" != "https://github.com/$GITHUB_REPOSITORY" ]]; then
+              latest_sha=$(git ls-remote "$repo" HEAD | cut -f1 | tail -n1)
+            else
+              latest_sha=$(git log -n 1 --format=%H -- "$path")
+            fi
+            cached_sha=$(jq -r --arg name "$name" '.[$name] // ""' build-state.json)
+
+            if [[ "$latest_sha" != "$cached_sha" ]]; then
+              echo "Building $name"
+              git clone --depth=1 "$repo" src/$name
+              pushd "src/$name/$path"
+              makepkg -s --noconfirm --clean --sign --skippgpcheck
+              mv *.pkg.tar.xz *.sig "$outdir"
+              popd
+              updated_state=$(echo "$updated_state" | jq --arg name "$name" --arg sha "$latest_sha" '. + {($name): $sha}')
+            else
+              echo "Skipping $name (unchanged)"
+              updated_state=$(echo "$updated_state" | jq --arg name "$name" --arg sha "$cached_sha" '. + {($name): $sha}')
+            fi
+            echo "::endgroup::"
+          done
+
+          echo "$updated_state" > new-build-state.json
+
+      - name: Add packages to repo
+        run: |
+          cp out/*.pkg.tar.xz out/*.sig repo/ 2>/dev/null || true
+          cd repo
+          KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
+          if ls *.pkg.tar.xz >/dev/null 2>&1; then
+            repo-add -s -k $KEYID ${{ github.repository_owner }}.db.tar.gz *.pkg.tar.xz
+          fi
+
+      - name: Save new build-state
+        run: cp new-build-state.json repo/build-state.json
+
+      - name: Push to repo
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./repo

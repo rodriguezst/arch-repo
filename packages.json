@@ -1,0 +1,7 @@
+[
+  {
+    "name": "python2",
+    "repo": "https://aur.archlinux.org/python2.git",
+    "path": "."
+  }
+]
