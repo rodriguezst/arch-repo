@@ -3,5 +3,10 @@
     "name": "python2",
     "repo": "https://aur.archlinux.org/python2.git",
     "path": "."
+  },
+  {
+    "name": "refind",
+    "repo": "https://github.com/rodriguezst/arch-repo",
+    "path": "packages/refind"
   }
 ]
