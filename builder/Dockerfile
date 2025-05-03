@@ -15,12 +15,12 @@ RUN echo "Installing dependencies..." && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     mkdir -p /__w /github/home /github/workflow && \
     echo "Adding custom repository..." && \
-    pacman-key --recv-key 666411233117519B --keyserver keyserver.ubuntu.com && \
-    pacman-key --lsign-key 666411233117519B && \
-    echo "[nabu-alarm]" >> /etc/pacman.conf && \
+    pacman-key --recv-key 864C084CBA72A871 --keyserver keyserver.ubuntu.com && \
+    pacman-key --lsign-key 864C084CBA72A871 && \
+    echo "[rodriguezst]" >> /etc/pacman.conf && \
     echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf && \
-    echo "Server = https://nabu-alarm.github.io/repo" >> /etc/pacman.conf && \
-    pacman -Sy --noconfirm nabu-alarm-keyring && \
+    echo "Server = https://rodriguezst.github.io/arch-repo" >> /etc/pacman.conf && \
+    #pacman -Sy --noconfirm rodriguezst-keyring && \
     pacman-key --populate
 
 ENV HOME=/home/builder LANG=C.UTF-8
