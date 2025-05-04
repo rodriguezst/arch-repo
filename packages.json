@@ -8,5 +8,11 @@
     "name": "refind",
     "repo": "https://github.com/rodriguezst/arch-repo",
     "path": "packages/refind"
+
+  },
+  {
+    "name": "visual-studio-code-bin",
+    "repo": "https://aur.archlinux.org/visual-studio-code-bin.git",
+    "path": "."
   }
 ]
