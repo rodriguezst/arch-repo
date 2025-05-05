@@ -64,8 +64,7 @@ jobs:
         run: |
           KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
           echo "GPGKEY=$KEYID" >> ~/.makepkg.conf
-          echo "PACKAGER='Arch Package Builder <build@tx0.su>'" >> ~/.makepkg.conf
-          echo "MAKEFLAGS='-j$(nproc)'" >> ~/.makepkg.conf
+          echo "PACKAGER='GitHub Actions Builder <github-actions[bot]@users.noreply.github.com>'" >> ~/.makepkg.conf
           echo "PKGEXT='.pkg.tar.xz'" >> ~/.makepkg.conf
           echo "SRCEXT='.src.tar.gz'" >> ~/.makepkg.conf
 
