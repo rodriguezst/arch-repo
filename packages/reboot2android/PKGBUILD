@@ -1,0 +1,45 @@
+# Maintainer: rodriguezst <git@rodriguezst.es>
+
+pkgname=reboot2android
+pkgver=1.0.2
+pkgrel=2
+pkgdesc="An EFI app to trigger a Reboot to Android on patched UEFIs for Xiaomi Pad 5"
+arch=(aarch64)
+url="https://github.com/rodriguezst/Reboot2AndroidPkg"
+install=${pkgname}.install
+makedepends=(
+  make
+  iasl
+  python3
+)
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/rodriguezst/Reboot2AndroidPkg/archive/refs/tags/v$pkgver.tar.gz"
+        git+https://github.com/tianocore/edk2.git#tag=edk2-stable202411)
+sha512sums=('783addddff6895651587e8c979bd7307a2bc16481d3db08a424a6702f5d6dd7d4ec8f67684685998e0557dbafab0a4e3658f387a0c6a333faa9b5e14ad01e017'
+            'fb15d0709778aebca8060004820f7af6718e95ea3b3ceb50efe7af82b64feee85af1480be4126691569d0c89c891677db4bb27b4d54126875a3748044017f4eb')
+b2sums=('9e1e6f139d6c8f63e933c6b97c75f0523699fd589ec52db6fcdb6d403593d86de59c473ebb1f15381e6d3562889ae6c3f9ff63febe59e81801a810afe48f2f4d'
+        'fb2977af32fd2f33bfc661cb6c4b28a7f5d390c498122b26920cf18d1c3c0f29f19c618726d7f5a439a1b964e05d689eac94be1bada34c35b6358eb5e591e287')
+_arch='aa64'
+
+prepare() {
+  mv Reboot2AndroidPkg-$pkgver ${pkgname}-${pkgver}
+  pushd edk2
+  git submodule init
+  git submodule update
+  export EDK2_PATH=$(pwd)
+  popd
+}
+
+build() {
+  cd ${pkgname}-${pkgver}
+  make
+}
+
+package() {
+  license=('MIT')
+  optdepends=(
+    'refind-nabu: boot manager'
+    'sbsigntools: EFI binary signing utility'
+  )
+
+  install -vDm 644 ${EDK2_PATH}/Build/Reboot2AndroidPkg/RELEASE_GCC5/AARCH64/Reboot2AndroidPkg/Application/Reboot2Android/Reboot2Android/OUTPUT/Reboot2Android.efi -t "$pkgdir/usr/share/$pkgname/"
+}

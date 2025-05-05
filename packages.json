@@ -19,5 +19,10 @@
     "name": "widevine",
     "repo": "https://codeberg.org/mogwai/widevine.git",
     "path": "."
+  },
+  {
+    "name": "reboot2android",
+    "repo": "https://github.com/rodriguezst/arch-repo",
+    "path": "packages/reboot2android"
   }
 ]

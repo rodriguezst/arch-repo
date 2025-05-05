@@ -1,0 +1,19 @@
+_install_to_esp() {
+    echo "Adding Reboot2Android EFI application to ESP..."
+    if findmnt --fstab -uno SOURCE /boot/efi &>/dev/null && ! mountpoint -q /boot/efi; then
+        echo "WARNING: /boot/efi appears to be a separate partition but is not mounted."
+        echo "Skipping ESP copy operations."
+    else
+        mkdir -p "/boot/efi/EFI/android"
+        install -vDm 644 "/usr/share/reboot2android/Reboot2Android.efi" "/boot/efi/EFI/android/"
+        echo "Done! EFI file copied to /boot/efi/EFI/android/."
+    fi
+}
+
+post_install() {
+    _install_to_esp
+}
+
+post_upgrade() {
+    _install_to_esp
+}
