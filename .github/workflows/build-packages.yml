@@ -121,6 +121,9 @@ jobs:
           KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
           if ls *.pkg.tar.xz >/dev/null 2>&1; then
             repo-add -s -k $KEYID ${{ github.repository_owner }}.db.tar.gz *.pkg.tar.xz
+            alpm-html --output ./ --name ${{ github.repository_owner }} \
+              --description "ArchLinux Repository" --key-id $KEYID \
+              --url https://${{ github.repository_owner }}github.io/arch-repo
           fi
 
       - name: Save new build-state

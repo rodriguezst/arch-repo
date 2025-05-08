@@ -7,23 +7,25 @@ RUN apk add --no-cache libarchive-tools wget && \
 FROM scratch
 COPY --from=rootfs-downloader /rootfs/ /
 
-RUN echo "Installing dependencies..." && \
-    pacman-key --init && \
+RUN pacman-key --init && \
     pacman-key --populate archlinuxarm && \
-    pacman -Syu --noconfirm sudo git base-devel jq gnupg && \
     useradd -m builder -u 1001 && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     mkdir -p /__w /github/home /github/workflow && \
-    echo "Adding custom repository..." && \
     pacman-key --recv-key 864C084CBA72A871 --keyserver keyserver.ubuntu.com && \
     pacman-key --lsign-key 864C084CBA72A871 && \
     echo "[rodriguezst]" >> /etc/pacman.conf && \
     echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf && \
     echo "Server = https://rodriguezst.github.io/arch-repo" >> /etc/pacman.conf && \
     #pacman -Sy --noconfirm rodriguezst-keyring && \
-    pacman-key --populate
+    pacman-key --populate && \
+    pacman -Syu --noconfirm sudo git base-devel jq gnupg
 
 ENV HOME=/home/builder LANG=C.UTF-8
 USER builder
 WORKDIR /home/builder
+
+RUN git clone https://github.com/rodriguezst/alpm-html.git alpm-html && \
+    cd alpm-html && makepkg -s -i --noconfirm && cd ../ && rm -rf alpm-html
+
 CMD ["/usr/bin/bash"]
