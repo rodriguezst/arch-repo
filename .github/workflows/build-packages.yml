@@ -67,6 +67,7 @@ jobs:
           echo "PACKAGER='GitHub Actions Builder <github-actions[bot]@users.noreply.github.com>'" >> ~/.makepkg.conf
           echo "PKGEXT='.pkg.tar.xz'" >> ~/.makepkg.conf
           echo "SRCEXT='.src.tar.gz'" >> ~/.makepkg.conf
+          echo "MAKEFLAGS='-j$(nproc)'" >> ~/.makepkg.conf
 
       - name: Build only changed packages
         run: |
