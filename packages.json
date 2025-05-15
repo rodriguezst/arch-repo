@@ -24,5 +24,11 @@
     "name": "reboot2android",
     "repo": "https://github.com/rodriguezst/arch-repo",
     "path": "packages/reboot2android"
+
+  },
+  {
+    "name": "linux-nabu",
+    "repo": "https://github.com/rodriguezst/arch-kernel-nabu",
+    "path": "."
   }
 ]
