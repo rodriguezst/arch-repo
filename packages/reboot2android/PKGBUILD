@@ -2,7 +2,7 @@
 
 pkgname=reboot2android
 pkgver=1.0.2
-pkgrel=2
+pkgrel=3
 pkgdesc="An EFI app to trigger a Reboot to Android on patched UEFIs for Xiaomi Pad 5"
 arch=(aarch64)
 url="https://github.com/rodriguezst/Reboot2AndroidPkg"
@@ -12,6 +12,8 @@ makedepends=(
   iasl
   python3
 )
+# Build fails when using -j2 or higher as MAKEFLAGS
+options=('!makeflags')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/rodriguezst/Reboot2AndroidPkg/archive/refs/tags/v$pkgver.tar.gz"
         git+https://github.com/tianocore/edk2.git#tag=edk2-stable202411)
 sha512sums=('783addddff6895651587e8c979bd7307a2bc16481d3db08a424a6702f5d6dd7d4ec8f67684685998e0557dbafab0a4e3658f387a0c6a333faa9b5e14ad01e017'
