@@ -107,6 +107,13 @@ jobs:
 
           echo "$updated_state" > new-build-state.json
 
+      - name: Remove old versions of built packages
+        run: |
+          for file in $(basename -a out/*.pkg.tar.xz); do
+          	BASE=$(echo $file | sed 's/\([a-z-]*\)-[0-9].*/\1/')
+          	ls repo/*.pkg.tar.xz{,.sig} | grep -E ".*/${BASE}-[0-9].*" | xargs rm -v -f "{}"
+          done
+
       - name: Add packages to repo
         run: |
           cp out/*.pkg.tar.xz out/*.sig repo/ 2>/dev/null || true
