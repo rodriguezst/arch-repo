@@ -35,5 +35,35 @@
     "repo": "https://github.com/rodriguezst/arch-kernel-nabu",
     "path": ".",
     "environment": "signed-efi"
+  },
+  {
+    "name": "linux-firmware-xiaomi-nabu",
+    "repo": "https://github.com/nabu-alarm/linux-firmware-xiaomi-nabu",
+    "path": ".",
+    "environment": "default"
+  },
+  {
+    "name": "alsa-ucm-conf-xiaomi-nabu",
+    "repo": "https://github.com/nabu-alarm/alsa-ucm-conf-xiaomi-nabu",
+    "path": ".",
+    "environment": "default"
+  },
+  {
+    "name": "qrtr",
+    "repo": "https://github.com/nabu-alarm/qrtr",
+    "path": ".",
+    "environment": "default"
+  },
+  {
+    "name": "rmtfs",
+    "repo": "https://github.com/nabu-alarm/rmtfs",
+    "path": ".",
+    "environment": "default"
+  },
+  {
+    "name": "tqftpserv",
+    "repo": "https://github.com/nabu-alarm/tqftpserv",
+    "path": ".",
+    "environment": "default"
   }
 ]
