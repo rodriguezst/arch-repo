@@ -2,33 +2,38 @@
   {
     "name": "python2",
     "repo": "https://aur.archlinux.org/python2.git",
-    "path": "."
+    "path": ".",
+    "environment": "default"
   },
   {
     "name": "refind",
     "repo": "https://github.com/rodriguezst/arch-repo",
-    "path": "packages/refind"
-
+    "path": "packages/refind",
+    "environment": "default"
   },
   {
     "name": "visual-studio-code-bin",
     "repo": "https://aur.archlinux.org/visual-studio-code-bin.git",
-    "path": "."
+    "path": ".",
+    "environment": "default"
   },
   {
     "name": "widevine",
     "repo": "https://codeberg.org/mogwai/widevine.git",
-    "path": "."
+    "path": ".",
+    "environment": "default"
   },
   {
     "name": "reboot2android",
     "repo": "https://github.com/rodriguezst/arch-repo",
-    "path": "packages/reboot2android"
+    "path": "packages/reboot2android",
+    "environment": "default"
 
   },
   {
     "name": "linux-nabu",
     "repo": "https://github.com/rodriguezst/arch-kernel-nabu",
-    "path": "."
+    "path": ".",
+    "environment": "signed-efi"
   }
 ]

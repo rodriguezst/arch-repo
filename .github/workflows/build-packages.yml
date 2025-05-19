@@ -7,6 +7,7 @@ on:
     paths:
       - 'packages.json'
       - '.github/workflows/build-packages.yml'
+      - '.github/workflows/scripts/**'
 
   schedule:
     - cron: '0 0 * * 1'
@@ -34,24 +35,23 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Checkout repo
+      - name: Checkout gh-pages
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-          path: repo
+          path: gh-pages
       
-      - name: Checkout main
+      - name: Checkout arch-repo
         uses: actions/checkout@v4
         with:
-          ref: main
-          path: main
+          path: arch-repo
           fetch-depth: 0
 
       - name: Load config
         run: |
-          cp main/packages.json .
-          [ ! -f repo/build-state.json ] && echo '{}' > repo/build-state.json
-          cp repo/build-state.json .
+          cp arch-repo/packages.json .
+          [ ! -f gh-pages/build-state.json ] && echo '{}' > gh-pages/build-state.json
+          cp gh-pages/build-state.json .
 
       - name: Import GPG key
         run: |
@@ -69,55 +69,38 @@ jobs:
           echo "SRCEXT='.src.tar.gz'" >> ~/.makepkg.conf
           echo "MAKEFLAGS='-j$(nproc)'" >> ~/.makepkg.conf
 
-      - name: Build only changed packages
+      - name: Build only changed packages (environment = default)
+        shell: bash
+        env:
+          BUILD_ENVIRONMENT: "default"
         run: |
-          mkdir out
-          outdir="$(realpath ./out)"
-          updated_state="{}"
+          bash arch-repo/.github/workflows/scripts/build-packages.sh "$BUILD_ENVIRONMENT"
 
-          for row in $(jq -c '.[]' packages.json); do
-            name="$(echo "$row" | jq -r '.name')"
-            repo="$(echo "$row" | jq -r '.repo')"
-            path="$(echo "$row" | jq -r '.path')"
-
-            echo "::group::$name"
-            if [[ "$repo" != "https://github.com/$GITHUB_REPOSITORY" ]]; then
-              latest_sha=$(git ls-remote "$repo" HEAD | cut -f1 | tail -n1)
-            else
-              pushd main
-              latest_sha=$(git log -n 1 --format=%H -- "$path")
-              popd
-            fi
-            cached_sha=$(jq -r --arg name "$name" '.[$name] // ""' build-state.json)
-
-            if [[ "$latest_sha" != "$cached_sha" ]]; then
-              echo "Building $name"
-              git clone --depth=1 "$repo" src/$name
-              pushd "src/$name/$path"
-              makepkg -s --noconfirm --clean --sign --skippgpcheck
-              mv *.pkg.tar.xz *.sig "$outdir"
-              popd
-              updated_state=$(echo "$updated_state" | jq --arg name "$name" --arg sha "$latest_sha" '. + {($name): $sha}')
-            else
-              echo "Skipping $name (unchanged)"
-              updated_state=$(echo "$updated_state" | jq --arg name "$name" --arg sha "$cached_sha" '. + {($name): $sha}')
-            fi
-            echo "::endgroup::"
-          done
-
-          echo "$updated_state" > new-build-state.json
+      - name: Build only changed packages (environment = signed-efi)
+        shell: bash
+        env:
+          BUILD_ENVIRONMENT: "signed-efi"
+          SB_KEY_ASCII: ${{ secrets.SECURE_BOOT_KEY }}
+          SB_CERT_ASCII: ${{ secrets.SECURE_BOOT_CERTIFICATE }}
+        run: |
+          echo "$SB_KEY_ASCII" > sb.key
+          echo "$SB_CERT_ASCII" > sb.crt
+          export SB_SIGN_KEY=$(pwd)/sb.key
+          export SB_SIGN_CERT=$(pwd)/sb.crt
+          bash arch-repo/.github/workflows/scripts/build-packages.sh "$BUILD_ENVIRONMENT"
+          rm -rf {$SB_SIGN_KEY,$SB_SIGN_CERT}
 
       - name: Remove old versions of built packages
         run: |
           for file in $(basename -a out/*.pkg.tar.xz); do
           	BASE=$(echo $file | sed 's/\([a-z-]*\)-[0-9].*/\1/')
-          	ls repo/*.pkg.tar.xz{,.sig} | grep -E ".*/${BASE}-[0-9].*" | xargs rm -v -f "{}"
+          	ls gh-pages/*.pkg.tar.xz{,.sig} | grep -E ".*/${BASE}-[0-9].*" | xargs rm -v -f "{}"
           done
 
-      - name: Add packages to repo
+      - name: Add packages to gh-pages
         run: |
-          cp out/*.pkg.tar.xz out/*.sig repo/ 2>/dev/null || true
-          cd repo
+          cp out/*.pkg.tar.xz out/*.sig gh-pages/ 2>/dev/null || true
+          cd gh-pages
           KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
           if ls *.pkg.tar.xz >/dev/null 2>&1; then
             repo-add -s -k $KEYID ${{ github.repository_owner }}.db.tar.gz *.pkg.tar.xz
@@ -128,12 +111,13 @@ jobs:
           fi
 
       - name: Save new build-state
-        run: cp new-build-state.json repo/build-state.json
+        run: cp build-state.json gh-pages/build-state.json
 
-      - name: Push to repo
+      - name: Push to gh-pages
         uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./repo
+          publish_dir: ./gh-pages
           force_orphan: true
