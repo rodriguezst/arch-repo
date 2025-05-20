@@ -12,7 +12,7 @@ STATE_FILE=build-state.json
 
 mkdir -p "$OUT_DIR"
 OUT_DIR=$(realpath "$OUT_DIR"/)
-updated_state="{}"
+updated_state=$(cat $STATE_FILE)
 
 for row in $(jq -c ".[] | select(.environment == \"$BUILD_ENVIRONMENT\")" $PKGS_FILE); do
   name="$(echo "$row" | jq -r '.name')"
