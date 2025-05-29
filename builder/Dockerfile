@@ -16,10 +16,10 @@ RUN pacman-key --init && \
     pacman-key --lsign-key 864C084CBA72A871 && \
     echo "[rodriguezst]" >> /etc/pacman.conf && \
     echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf && \
-    echo "Server = https://rodriguezst.github.io/arch-repo" >> /etc/pacman.conf && \
+    echo "Server = https://github.com/rodriguezst/arch-repo/releases/download/aarch64" >> /etc/pacman.conf && \
     #pacman -Sy --noconfirm rodriguezst-keyring && \
     pacman-key --populate && \
-    pacman -Syu --noconfirm sudo git base-devel jq gnupg
+    pacman -Syu --noconfirm sudo git base-devel jq gnupg github-cli
 
 ENV HOME=/home/builder LANG=C.UTF-8
 USER builder

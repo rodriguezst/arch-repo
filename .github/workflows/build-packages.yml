@@ -14,6 +14,9 @@ on:
 
   workflow_dispatch:
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
@@ -27,19 +30,13 @@ jobs:
 
     steps:
 
-      - name: Update system
-        run: sudo pacman -Syu --noconfirm
+      - name: Update system and install GH cli
+        run: sudo pacman -Syu --noconfirm github-cli
   
       - name: Setup git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-      - name: Checkout gh-pages
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
       
       - name: Checkout arch-repo
         uses: actions/checkout@v4
@@ -50,8 +47,10 @@ jobs:
       - name: Load config
         run: |
           cp arch-repo/packages.json .
-          [ ! -f gh-pages/build-state.json ] && echo '{}' > gh-pages/build-state.json
-          cp gh-pages/build-state.json .
+          mkdir -p out
+          gh release download aarch64 --repo ${{ github.repository }} --dir ./out --pattern build-state.json --pattern ${{ github.repository_owner }}.db* --pattern ${{ github.repository_owner }}.files* || true
+          [ ! -f out/build-state.json ] && echo '{}' > out/build-state.json
+          cp out/build-state.json .
 
       - name: Import GPG key
         run: |
@@ -90,32 +89,60 @@ jobs:
           bash arch-repo/.github/workflows/scripts/build-packages.sh "$BUILD_ENVIRONMENT"
           rm -rf {$SB_SIGN_KEY,$SB_SIGN_CERT}
 
-      - name: Remove old versions of built packages
+      - name: Add packages to release
+        shell: bash
         run: |
-          for file in $(basename -a out/*.pkg.tar.xz); do
-          	BASE=$(echo $file | sed 's/\([a-z-]*\)-[0-9].*/\1/')
-          	ls gh-pages/*.pkg.tar.xz{,.sig} | grep -E ".*/${BASE}-[0-9].*" | xargs rm -v -f "{}"
-          done
-
-      - name: Add packages to gh-pages
-        run: |
-          cp out/*.pkg.tar.xz out/*.sig gh-pages/ 2>/dev/null || true
-          cd gh-pages
+          mkdir -p gh-pages
+          cd out
           KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
           if ls *.pkg.tar.xz >/dev/null 2>&1; then
             repo-add -s -k $KEYID ${{ github.repository_owner }}.db.tar.gz *.pkg.tar.xz
             rm -rf *.html
-            alpm-html --output ./ --name ${{ github.repository_owner }} \
+            alpm-html --output ../gh-pages/ --name ${{ github.repository_owner }} \
               --description "Arch Linux Repository" --key-id $KEYID \
-              --url https://${{ github.repository_owner }}github.io/arch-repo
+              --url https://github.com/${{ github.repository_owner }}/arch-repo/releases/download/$arch
+            echo "NEW_PKGS=TRUE" >> "$GITHUB_ENV"
           fi
 
       - name: Save new build-state
-        run: cp build-state.json gh-pages/build-state.json
+        if: env.NEW_PKGS == 'TRUE'
+        run: cp build-state.json out/build-state.json
+
+      - name: Remove old versions of built packages
+        if: env.NEW_PKGS == 'TRUE'
+        shell: bash
+        run: |
+          shopt -s nullglob
+          TO_REMOVE=()
+          for file in $(basename -a out/*.pkg.tar.xz); do
+              BASE=$(echo $file | sed 's/\([a-z-]*\)-[0-9].*/\1/')
+              TO_REMOVE+="$(gh release view aarch64 --repo ${{ github.repository }} --json assets -q '.assets[].name | select(endswith(".pkg.tar.xz"))' 2>/dev/null | grep -E "${BASE}-[0-9].*" || true)"
+          done
+          for file in $TO_REMOVE; do
+              echo "Deleting $file..."
+              gh release delete-asset aarch64 --repo ${{ github.repository }} -y $file || true
+              gh release delete-asset aarch64 --repo ${{ github.repository }} -y $file.sig || true
+          done
+
+      - name: Upload to releases
+        if: env.NEW_PKGS == 'TRUE'
+        shell: bash
+        run: |
+          shopt -s nullglob
+          echo "Uploading package files..."
+          for file in $(basename -a out/*.pkg.tar.xz{,.sig}); do
+          	gh release upload aarch64 --repo ${{ github.repository }} --clobber out/"$file"
+          done
+          echo "Uploading repo files..."
+          for file in $(basename -a out/${{ github.repository_owner }}.{db*,files*}); do
+            gh release upload aarch64 --repo ${{ github.repository }} --clobber out/"$file"
+          done
+          echo "Uploading build status file..."
+          gh release upload aarch64 --repo ${{ github.repository }} --clobber out/build-state.json
 
       - name: Push to gh-pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && env.NEW_PKGS == 'TRUE'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
