@@ -65,5 +65,11 @@
     "repo": "https://github.com/nabu-alarm/tqftpserv",
     "path": ".",
     "environment": "default"
+  },
+  {
+    "name": "brave-bin",
+    "repo": "https://aur.archlinux.org/brave-bin.git",
+    "path": ".",
+    "environment": "default"
   }
 ]
