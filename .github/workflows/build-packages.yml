@@ -30,8 +30,8 @@ jobs:
 
     steps:
 
-      - name: Update system and install GH cli
-        run: sudo pacman -Syu --noconfirm github-cli
+      - name: Update system
+        run: sudo pacman -Syu --noconfirm
   
       - name: Setup git
         run: |
