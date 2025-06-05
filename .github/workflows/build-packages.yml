@@ -107,8 +107,9 @@ jobs:
             rm -rf *.html
             alpm-html --output ../gh-pages/ --name ${{ github.repository_owner }} \
               --description "Arch Linux Repository" --key-id $KEYID \
-              --url https://github.com/${{ github.repository_owner }}/arch-repo/relea \
-              --db-path ${{ github.repository_owner }}.db.tar.gz
+              --url https://github.com/${{ github.repository_owner }}/arch-repo/releases/download/$arch \
+              --db-path ${{ github.repository_owner }}.db.tar.gz \
+              --files-path ${{ github.repository_owner }}.files.tar.gz
             echo "NEW_PKGS=TRUE" >> "$GITHUB_ENV"
           fi
 
