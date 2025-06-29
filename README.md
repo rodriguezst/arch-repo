@@ -8,3 +8,5 @@ echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf && \
 echo "Server = https://github.com/rodriguezst/arch-repo/releases/download/aarch64" >> /etc/pacman.conf && \
 pacman-key --populate
 ```
+## Packages
+See https://rodriguezst.github.io/arch-repo
