@@ -124,13 +124,19 @@ jobs:
           shopt -s nullglob
           TO_REMOVE=()
           for file in $(basename -a out/*.pkg.tar.xz); do
-              BASE=$(echo $file | sed 's/\([a-z-]*\)-[0-9].*/\1/')
-              TO_REMOVE+="$(gh release view aarch64 --repo ${{ github.repository }} --json assets -q '.assets[].name | select(endswith(".pkg.tar.xz"))' 2>/dev/null | grep -E "${BASE}-[0-9].*" || true)"
+              BASE=$(echo "$file" | sed 's/\([a-z-]*\)-[0-9].*/\1/')
+              # Use mapfile to properly read each line into array elements
+              mapfile -t matches < <(gh release view aarch64 --repo ${{ github.repository }} --json assets -q '.assets[].name | select(endswith(".pkg.tar.xz"))' 2>/dev/null | grep -E "${BASE}-[0-9].*" || true)
+              # Add each match as a separate array element
+              TO_REMOVE+=("${matches[@]}")
           done
-          for file in $TO_REMOVE; do
-              echo "Deleting $file..."
-              gh release delete-asset aarch64 --repo ${{ github.repository }} -y $file || true
-              gh release delete-asset aarch64 --repo ${{ github.repository }} -y $file.sig || true
+          # Iterate over each file individually
+          for file in "${TO_REMOVE[@]}"; do
+              if [[ -n "$file" ]]; then  # Only process non-empty entries
+                  echo "Deleting $file..."
+                  gh release delete-asset aarch64 --repo ${{ github.repository }} -y "$file" || true
+                  gh release delete-asset aarch64 --repo ${{ github.repository }} -y "$file.sig" || true
+              fi
           done
 
       - name: Upload to releases
