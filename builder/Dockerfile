@@ -1,6 +1,6 @@
 FROM alpine AS rootfs-downloader
 RUN apk add --no-cache libarchive-tools wget && \
-    wget "http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz" && \
+    wget "http://fl.us.mirror.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz" && \
     mkdir /rootfs && \
     bsdtar -xpf ArchLinuxARM-aarch64-latest.tar.gz -C /rootfs
 
