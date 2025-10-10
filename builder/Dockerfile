@@ -17,6 +17,7 @@ RUN pacman-key --init && \
     echo "[rodriguezst]" >> /etc/pacman.conf && \
     echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf && \
     echo "Server = https://github.com/rodriguezst/arch-repo/releases/download/aarch64" >> /etc/pacman.conf && \
+    sed -i 's|mirror.archlinuxarm.org|fl.us.mirror.archlinuxarm.org|g' /etc/pacman.d/mirrorlist && \
     #pacman -Sy --noconfirm rodriguezst-keyring && \
     pacman-key --populate && \
     pacman -Syu --noconfirm sudo git base-devel jq gnupg github-cli
